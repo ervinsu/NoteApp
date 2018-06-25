@@ -1,11 +1,15 @@
 package com.example.ervin.noteapp;
 
+import android.content.ContentValues;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.database.Cursor;
+import android.net.Uri;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -18,6 +22,11 @@ import com.example.ervin.noteapp.db.NoteHelper;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+
+import static com.example.ervin.noteapp.db.DatabaseContract.CONTENT_URI;
+import static com.example.ervin.noteapp.db.DatabaseContract.NoteColumns.DATE;
+import static com.example.ervin.noteapp.db.DatabaseContract.NoteColumns.DESCRIPTION;
+import static com.example.ervin.noteapp.db.DatabaseContract.NoteColumns.TITLE;
 
 public class FormAddUpdateActivity extends AppCompatActivity implements View.OnClickListener{
 
@@ -36,7 +45,7 @@ public class FormAddUpdateActivity extends AppCompatActivity implements View.OnC
     public static int RESULT_DELETE = 301;
 
     private NoteModel note;
-    private int position;
+  //  private int position;
     private NoteHelper noteHelper;
 
     @Override
@@ -52,23 +61,36 @@ public class FormAddUpdateActivity extends AppCompatActivity implements View.OnC
         noteHelper = new NoteHelper(this);
         noteHelper.open();
 
+
+        Uri uri = getIntent().getData();
         note = getIntent().getParcelableExtra(EXTRA_NOTE);
 
-        if (note != null){
-            position = getIntent().getIntExtra(EXTRA_POSITION, 0);
-            Toast.makeText(this, "posisi ke "+position, Toast.LENGTH_SHORT).show();
-            isEdit = true;
+        if (uri != null) {
+            Cursor cursor = getContentResolver().query(uri, null, null, null, null);
+            if (cursor != null){
+                if(cursor.moveToFirst()){
+                    note = new NoteModel(cursor);
+                    Log.d("Notenya", note.getDate());
+                }
+                cursor.close();
+            }
         }
+
+
+
 
         String actionBarTitle = null;
         String btnTitle = null;
 
-        if (isEdit){
+        if (note != null) {
+            isEdit = true;
+
             actionBarTitle = "Ubah";
             btnTitle = "Update";
+
             edtTitle.setText(note.getTitle());
             edtDescription.setText(note.getDescription());
-        }else{
+        } else {
             actionBarTitle = "Tambah";
             btnTitle = "Simpan";
         }
@@ -85,38 +107,32 @@ public class FormAddUpdateActivity extends AppCompatActivity implements View.OnC
         if (v.getId() == R.id.btn_submit) {
             String title = edtTitle.getText().toString().trim();
             String description = edtDescription.getText().toString().trim();
+
             boolean isEmpty = false;
 
-            /*
-            Jika fieldnya masih kosong maka tampilkan error
-             */
             if (TextUtils.isEmpty(title)) {
                 isEmpty = true;
                 edtTitle.setError("Field can not be blank");
             }
 
             if (!isEmpty) {
-                NoteModel newNote = new NoteModel();
-                newNote.setTitle(title);
-                newNote.setDescription(description);
 
-                Intent intent = new Intent();
+                // Gunakan contentvalues untuk menampung data
+                ContentValues values = new ContentValues();
+                values.put(TITLE,title);
+                values.put(DESCRIPTION,description);
 
-                /*
-                Jika merupakan edit setresultnya UPDATE, dan jika bukan maka setresultnya ADD
-                 */
                 if (isEdit) {
-                    newNote.setDate(note.getDate());
-                    newNote.setId(note.getId());
+                    getContentResolver().update(getIntent().getData(),values, null, null);
 
-                    noteHelper.update(newNote);
-
-                    intent.putExtra(EXTRA_POSITION, position);
-                    setResult(RESULT_UPDATE, intent);
+                    setResult(RESULT_UPDATE);
                     finish();
                 } else {
-                    newNote.setDate(getCurrentDate());
-                    noteHelper.insert(newNote);
+                    values.put(DATE,getCurrentDate());
+                    Log.d("hasil_title",values.get(TITLE).toString());
+                    Log.d("hasil_description",values.get(DESCRIPTION).toString());
+                    Log.d("hasil_date",values.get(DATE).toString());
+                    getContentResolver().insert(CONTENT_URI,values);
 
                     setResult(RESULT_ADD);
                     finish();
@@ -159,10 +175,10 @@ public class FormAddUpdateActivity extends AppCompatActivity implements View.OnC
         final boolean isDialogClose = alert_dialog_delete == ALERT_DIALOG_CLOSE;
         String dialogTitle = null, dialogMessage = null;
 
-        if (isDialogClose){
+        if (isDialogClose) {
             dialogTitle = "Batal";
             dialogMessage = "Apakah anda ingin membatalkan perubahan pada form?";
-        }else{
+        } else {
             dialogMessage = "Apakah anda yakin ingin menghapus item ini?";
             dialogTitle = "Hapus Note";
         }
@@ -173,27 +189,25 @@ public class FormAddUpdateActivity extends AppCompatActivity implements View.OnC
         alertDialogBuilder
                 .setMessage(dialogMessage)
                 .setCancelable(false)
-                .setPositiveButton("Ya",new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog,int id) {
-                        if (isDialogClose){
+                .setPositiveButton("Ya", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        if (isDialogClose) {
                             finish();
-                        }else{
-                            noteHelper.delete(note.getId());
-                            Intent intent = new Intent();
-                            intent.putExtra(EXTRA_POSITION, position);
-                            setResult(RESULT_DELETE, intent);
+                        } else {
+
+                            getContentResolver().delete(getIntent().getData(),null,null);
+                            setResult(RESULT_DELETE, null);
                             finish();
                         }
                     }
                 })
-                .setNegativeButton("Tidak",new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog,int id) {
+                .setNegativeButton("Tidak", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
                         dialog.cancel();
                     }
                 });
         AlertDialog alertDialog = alertDialogBuilder.create();
         alertDialog.show();
-
     }
 
     @Override

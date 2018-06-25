@@ -1,6 +1,7 @@
 package com.example.ervin.noteapp;
 
 import android.content.Intent;
+import android.database.Cursor;
 import android.os.AsyncTask;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -8,21 +9,25 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.View;
 import android.widget.ProgressBar;
+import android.widget.Toast;
 
 import com.example.ervin.noteapp.db.NoteHelper;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
 
+import static com.example.ervin.noteapp.db.DatabaseContract.CONTENT_URI;
+
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
     RecyclerView rvNotes;
     ProgressBar progressBar;
     FloatingActionButton fabAdd;
-
-    private LinkedList<NoteModel> list;
+    private Cursor cursorList;
+   // private LinkedList<NoteModel> list;
     private NoteAdapter adapter;
     private NoteHelper noteHelper;
 
@@ -44,10 +49,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         noteHelper = new NoteHelper(this);
         noteHelper.open();
 
-        list = new LinkedList<>();
+      //  list = new LinkedList<>();
 
         adapter = new NoteAdapter(this);
-        adapter.setListNotes(list);
+        adapter.setCursor(cursorList);
         rvNotes.setAdapter(adapter);
 
         new LoadNoteAsync().execute();
@@ -68,32 +73,28 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
 
-    private class LoadNoteAsync extends AsyncTask<Void, Void, ArrayList<NoteModel>> {
+    private class LoadNoteAsync extends AsyncTask<Void, Void, Cursor> {
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
             progressBar.setVisibility(View.VISIBLE);
-
-            if (list.size() > 0){
-                list.clear();
-            }
         }
 
         @Override
-        protected ArrayList<NoteModel> doInBackground(Void... voids) {
-            return noteHelper.query();
+        protected Cursor doInBackground(Void... voids) {
+            return getContentResolver().query(CONTENT_URI,null,null,null,null);
         }
 
         @Override
-        protected void onPostExecute(ArrayList<NoteModel> notes) {
+        protected void onPostExecute(Cursor notes) {
             super.onPostExecute(notes);
             progressBar.setVisibility(View.GONE);
-
-            list.addAll(notes);
-            adapter.setListNotes(list);
+            Log.d("tagggguh",notes.getCount()+"");
+            cursorList = notes;
+            adapter.setCursor(cursorList);
             adapter.notifyDataSetChanged();
 
-            if (list.size() == 0){
+            if (cursorList.getCount() == 0){
                 showSnackbarMessage("Tidak ada data saat ini");
             }
         }
@@ -106,7 +107,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             if (resultCode == FormAddUpdateActivity.RESULT_ADD){
                 new LoadNoteAsync().execute();
                 showSnackbarMessage("Satu item berhasil ditambahkan");
-                // rvNotes.getLayoutManager().smoothScrollToPosition(rvNotes, new RecyclerView.State(), 0);
             }
         }
         else if (requestCode == FormAddUpdateActivity.REQUEST_UPDATE) {
@@ -114,15 +114,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             if (resultCode == FormAddUpdateActivity.RESULT_UPDATE) {
                 new LoadNoteAsync().execute();
                 showSnackbarMessage("Satu item berhasil diubah");
-                // int position = data.getIntExtra(FormAddUpdateActivity.EXTRA_POSITION, 0);
-                // rvNotes.getLayoutManager().smoothScrollToPosition(rvNotes, new RecyclerView.State(), position);
             }
 
             else if (resultCode == FormAddUpdateActivity.RESULT_DELETE) {
-                int position = data.getIntExtra(FormAddUpdateActivity.EXTRA_POSITION, 0);
-                list.remove(position);
-                adapter.setListNotes(list);
-                adapter.notifyDataSetChanged();
+                new LoadNoteAsync().execute();
                 showSnackbarMessage("Satu item berhasil dihapus");
             }
         }
