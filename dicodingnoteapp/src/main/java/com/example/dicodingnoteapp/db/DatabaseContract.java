@@ -1,4 +1,4 @@
-package com.example.ervin.noteapp.db;
+package com.example.dicodingnoteapp.db;
 
 import android.database.Cursor;
 import android.net.Uri;

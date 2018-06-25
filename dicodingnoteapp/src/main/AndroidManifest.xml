@@ -1,10 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.ervin.noteapp">
-
-    <permission android:name="com.dicoding.mynotesapp.READ_DATABASE" android:protectionLevel="normal"/>
-    <permission android:name="com.dicoding.mynotesapp.WRITE_DATABASE" android:protectionLevel="normal"/>
-
+    package="com.example.dicodingnoteapp">
+    <uses-permission android:name="com.dicoding.mynotesapp.READ_DATABASE" />
+    <uses-permission android:name="com.dicoding.mynotesapp.WRITE_DATABASE" />
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -19,14 +17,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".FormAddUpdateActivity"></activity>
-
-        <provider
-            android:authorities="com.dicoding.mynotesapp"
-            android:name=".db.NoteProvider"
-            android:exported="true"
-            android:readPermission="com.dicoding.mynotesapp.READ_DATABASE"
-            android:writePermission="com.dicoding.mynotesapp.WRITE_DATABASE" />
+        <activity android:name=".FormActivity"></activity>
     </application>
 
 </manifest>

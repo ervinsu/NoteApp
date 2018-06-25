@@ -1,7 +1,14 @@
 package com.example.ervin.noteapp;
 
+import android.database.Cursor;
 import android.os.Parcel;
 import android.os.Parcelable;
+
+import com.example.ervin.noteapp.db.DatabaseContract;
+
+import static android.provider.BaseColumns._ID;
+import static com.example.ervin.noteapp.db.DatabaseContract.getColumnInt;
+import static com.example.ervin.noteapp.db.DatabaseContract.getColumnString;
 
 public class NoteModel implements Parcelable {
     private int id;
@@ -46,10 +53,16 @@ public class NoteModel implements Parcelable {
     }
 
     protected NoteModel(Parcel in) {
-        id = in.readInt();
-        title = in.readString();
-        description = in.readString();
-        date = in.readString();
+        this.id = in.readInt();
+        this.title = in.readString();
+        this.description = in.readString();
+        this.date = in.readString();
+    }
+    public NoteModel(Cursor cursor){
+        this.id = getColumnInt(cursor, _ID);
+        this.title = getColumnString(cursor, DatabaseContract.NoteColumns.TITLE);
+        this.description = getColumnString(cursor, DatabaseContract.NoteColumns.DESCRIPTION);
+        this.date = getColumnString(cursor, DatabaseContract.NoteColumns.DATE);
     }
 
     public static final Creator<NoteModel> CREATOR = new Creator<NoteModel>() {
@@ -64,6 +77,8 @@ public class NoteModel implements Parcelable {
         }
     };
 
+
+
     @Override
     public int describeContents() {
         return 0;
@@ -71,9 +86,9 @@ public class NoteModel implements Parcelable {
 
     @Override
     public void writeToParcel(Parcel dest, int flags) {
-        dest.writeInt(id);
-        dest.writeString(title);
-        dest.writeString(description);
-        dest.writeString(date);
+        dest.writeInt(this.id);
+        dest.writeString(this.title);
+        dest.writeString(this.description);
+        dest.writeString(this.date);
     }
 }
